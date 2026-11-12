@@ -1,0 +1,688 @@
+{
+  "name": "Agent 2 Review",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e17cd7cc-f511-40ac-88fa-1256d53fe681",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Review Agent Sheet"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1843386230,
+          "mode": "list",
+          "cachedResultName": "reviews"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "new"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        0
+      ],
+      "id": "e17bb26e-3bab-4e7b-8d36-48c0e84605c1",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HVjr34XfytwI9qb1",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Handle this Google review.\n\nReviewer: {{ $json.reviewer_name }}\nStar rating: {{ $json.star_rating }}\nReview text: {{ $json.review_text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a review-response assistant for a US dental practice. For each Google review, classify it and draft a public reply for a human to approve. You never post anything yourself.\n\nCATEGORIES (pick exactly one):\npositive, neutral, negative, billing, clinical_concern, spam, not_a_patient, legal_threat\n\nPRIVACY RULES (HIPAA) - never break these:\n1. Never confirm or imply the reviewer is or was a patient. Do not write \"your visit\", \"your treatment\", \"your appointment\" or \"when we saw you\".\n2. Never repeat any treatment, procedure, tooth, condition, medication or bill amount, even if the reviewer mentioned it.\n3. Never give medical advice in a reply.\n4. For any complaint, do not discuss details in public. Invite the person to contact the office directly at [office phone].\n\nOTHER RULES:\n- Never invent facts: no names, hours, offers, prices or phone numbers. Use [office phone] as a placeholder.\n- Replies must be under 60 words, warm and professional, and end with \"- The Brightside team\".\n- For spam, leave draft_reply empty.\n\nneeds_human = \"yes\" if ANY of these are true: rating is 1 or 2, category is billing, clinical_concern, legal_threat, spam or not_a_patient, or you are unsure. Otherwise \"no\".\n\nreason = one short sentence explaining your category and needs_human decision.\nEXTRA RULES - these apply to POSITIVE reviews too:\n- Do not mention any doctor or staff name, even if the reviewer did.\n- Do not repeat what was done (\"your cleaning\", \"your crown\", \"your visit\").\n- Do not say \"welcome you back\", \"see you again\" or \"your experience with us\".\n\nGOOD reply: \"Thank you so much for taking the time to share such kind words! It means a lot to our whole team. - The Brightside team\"\nBAD reply: \"We're glad you enjoyed your cleaning with Dr. Patel!\" (confirms a patient and a treatment)\n\nBefore you answer, check your draft_reply against every privacy rule. If it breaks one, rewrite it."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        896,
+        0
+      ],
+      "id": "7e3fa43d-9469-45ce-8d30-14173b931c20",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        768,
+        208
+      ],
+      "id": "8bf2c294-a1db-466f-a8d2-3365ff336c02",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "ifF1MiUFBLiILQkt",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"category\": \"negative\",\n  \"needs_human\": \"yes\",\n  \"draft_reply\": \"We're sorry to hear this. We'd like to make it right - please call us at [office phone]. - The Brightside team\",\n  \"reason\": \"One-star complaint about wait time, so a human should review it.\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1056,
+        208
+      ],
+      "id": "4f6f7c9c-177f-4e9c-90d7-6ab52280698e",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        992,
+        416
+      ],
+      "id": "1058154e-3ce6-49bb-affc-71749609e343",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "ifF1MiUFBLiILQkt",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": 5
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        672,
+        0
+      ],
+      "id": "621748d5-c5a1-4313-a9eb-db9da85a50a8",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const out = $json.output || {};\nconst review = $('Limit').item.json;\nconst reply = (out.draft_reply || '').toLowerCase();\n\n// Words that must never appear in a public reply\nconst banned = ['dr.', 'doctor', 'dentist', 'hygienist', 'cleaning', 'crown',\n  'root canal', 'tooth', 'teeth', 'extraction', 'filling', 'implant',\n  'infection', 'treatment', 'procedure', 'appointment', 'your visit',\n    'welcome you back', 'see you again', 'insurance', '$',\n  'again', 'comfortable', 'you received', 'your care', 'we treated', 'our patient'];\n\nconst hits = banned.filter(w => reply.includes(w));\n\nlet needsHuman = out.needs_human === 'yes';\nlet reason = out.reason || '';\n\nif (hits.length > 0) {\n  needsHuman = true;\n  reason = 'PRIVACY CHECK FAILED (found: ' + hits.join(', ') + '). ' + reason;\n}\nif (Number(review.star_rating) <= 2) needsHuman = true;\n\nreturn {\n  json: {\n    row_number: review.row_number,\n    review_id: review.review_id,\n    category: out.category,\n    needs_human: needsHuman ? 'yes' : 'no',\n    draft_reply: out.draft_reply,\n    reason: reason,\n    privacy_flags: hits.join(', ')\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        0
+      ],
+      "id": "878eb857-e307-4610-a090-0c8e288e773b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "33c7ef10-5251-418a-8805-3933bf338c75",
+              "leftValue": "={{ $json.needs_human }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1488,
+        0
+      ],
+      "id": "0dbc1bb9-eadc-468b-b0c7-a1dc7fb7fe3b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Review Agent Sheet"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1843386230,
+          "mode": "list",
+          "cachedResultName": "reviews"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "review_id": "={{ $json.review_id }}",
+            "status": "draft_ready",
+            "draft_reply": "={{ $json.draft_reply }}",
+            "category": "={{ $json.category }}",
+            "needs_human": "={{ $json.needs_human }}",
+            "reason": "={{ $json.reason }}"
+          },
+          "matchingColumns": [
+            "review_id"
+          ],
+          "schema": [
+            {
+              "id": "review_id",
+              "displayName": "review_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "practice",
+              "displayName": "practice",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "platform",
+              "displayName": "platform",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviewer_name",
+              "displayName": "reviewer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "star_rating",
+              "displayName": "star_rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "review_text",
+              "displayName": "review_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "draft_reply",
+              "displayName": "draft_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "needs_human",
+              "displayName": "needs_human",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        96
+      ],
+      "id": "b2ce2bd8-9b01-4d1d-83d1-a9d0189d41cc",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HVjr34XfytwI9qb1",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Review Agent Sheet"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1843386230,
+          "mode": "list",
+          "cachedResultName": "reviews"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "review_id": "={{ $json.review_id }}",
+            "status": "needs_review",
+            "draft_reply": "={{ $json.draft_reply }}",
+            "category": "={{ $json.category }}",
+            "needs_human": "={{ $json.needs_human }}",
+            "reason": "={{ $json.reason }}"
+          },
+          "matchingColumns": [
+            "review_id"
+          ],
+          "schema": [
+            {
+              "id": "review_id",
+              "displayName": "review_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "practice",
+              "displayName": "practice",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "platform",
+              "displayName": "platform",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviewer_name",
+              "displayName": "reviewer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "star_rating",
+              "displayName": "star_rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "review_text",
+              "displayName": "review_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "draft_reply",
+              "displayName": "draft_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "needs_human",
+              "displayName": "needs_human",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1728,
+        -176
+      ],
+      "id": "dc4674c8-2133-4739-9fec-18f7e999c1be",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HVjr34XfytwI9qb1",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "your-email@example.com",
+        "subject": "=Review needs approval: {{ $json.review_id }} ({{ $json.category }})",
+        "message": "=<div style=\"font-family: Arial, sans-serif; font-size: 14px; color: #222; max-width: 600px;\">\n\n  <p style=\"font-size: 16px; margin: 0 0 16px 0;\">\n    <strong>⚠️ A Google review needs your approval before any reply is posted.</strong>\n  </p>\n\n  <table style=\"border-collapse: collapse; width: 100%; margin-bottom: 16px;\">\n    <tr>\n      <td style=\"padding: 8px; background: #f4f4f4; width: 130px;\"><strong>Review ID</strong></td>\n      <td style=\"padding: 8px; border-bottom: 1px solid #eee;\">{{ $json.review_id }}</td>\n    </tr>\n    <tr>\n      <td style=\"padding: 8px; background: #f4f4f4;\"><strong>Category</strong></td>\n      <td style=\"padding: 8px; border-bottom: 1px solid #eee;\">{{ $json.category }}</td>\n    </tr>\n    <tr>\n      <td style=\"padding: 8px; background: #f4f4f4;\"><strong>Why flagged</strong></td>\n      <td style=\"padding: 8px; border-bottom: 1px solid #eee;\">{{ $json.reason }}</td>\n    </tr>\n  </table>\n\n  <p style=\"margin: 0 0 6px 0;\"><strong>Suggested draft (NOT posted):</strong></p>\n  <div style=\"padding: 12px; background: #fff8e1; border-left: 4px solid #f5a623; margin-bottom: 16px;\">\n    {{ $json.draft_reply || '<em>No draft. This review was flagged as spam or needs a manual response.</em>' }}\n  </div>\n\n  <p style=\"margin: 0 0 16px 0;\">\n    Approve, edit or reject it in the review sheet.\n  </p>\n\n  <p style=\"font-size: 12px; color: #888; margin: 0;\">\n    Sent automatically by the Review Reply Agent. Nothing is posted without human approval.\n  </p>\n\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1952,
+        -176
+      ],
+      "id": "9ae09455-50e5-44a1-a94f-ddda6b344f65",
+      "name": "Send a message",
+      "webhookId": "cc3dcc2d-c0f4-414f-bad6-46acb01cd2b5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2BYbUlg9hzQsGC5o",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d35523db-8048-4936-946f-b0c816721cd4",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "zQB60KKWAEagm1Cr",
+  "tags": []
+}

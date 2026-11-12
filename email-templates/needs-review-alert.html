@@ -1,0 +1,36 @@
+<!-- n8n Gmail node · Email Type: HTML · Subject: Review needs approval: {{ $json.review_id }} ({{ $json.category }}) -->
+<div style="font-family: Arial, sans-serif; font-size: 14px; color: #222; max-width: 600px;">
+
+  <p style="font-size: 16px; margin: 0 0 16px 0;">
+    <strong>⚠️ A Google review needs your approval before any reply is posted.</strong>
+  </p>
+
+  <table style="border-collapse: collapse; width: 100%; margin-bottom: 16px;">
+    <tr>
+      <td style="padding: 8px; background: #f4f4f4; width: 130px;"><strong>Review ID</strong></td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ $json.review_id }}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; background: #f4f4f4;"><strong>Category</strong></td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ $json.category }}</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; background: #f4f4f4;"><strong>Why flagged</strong></td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ $json.reason }}</td>
+    </tr>
+  </table>
+
+  <p style="margin: 0 0 6px 0;"><strong>Suggested draft (NOT posted):</strong></p>
+  <div style="padding: 12px; background: #fff8e1; border-left: 4px solid #f5a623; margin-bottom: 16px;">
+    {{ $json.draft_reply || '<em>No draft. This review was flagged as spam or needs a manual response.</em>' }}
+  </div>
+
+  <p style="margin: 0 0 16px 0;">
+    Approve, edit or reject it in the review sheet.
+  </p>
+
+  <p style="font-size: 12px; color: #888; margin: 0;">
+    Sent automatically by the Review Reply Agent. Nothing is posted without human approval.
+  </p>
+
+</div>
